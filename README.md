@@ -1,3 +1,5 @@
+# **STATUS:** UNTESTED - not yet validated - DO NOT USE
+
 # Raspberry Pi Bootstrap
 
 A reproducible, single-command bootstrap script for Raspberry Pi OS Lite (64-bit).
