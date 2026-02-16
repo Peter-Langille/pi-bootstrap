@@ -5,15 +5,18 @@ set -euo pipefail
 # raspi-bootstrap_v2_mllite.sh
 # One-shot Raspberry Pi OS bootstrap (NO OPTIONS)
 #
-# Adds ML-lite inference stack for realtime transform:
-# - scikit-learn, xgboost, lightgbm, joblib, onnxruntime
-#
-# Everything else same as v1:
-# - git/nvim/tmux/htop/jq/rg/fzf/etc
-# - docker engine + compose plugin
-# - tailscale (installed, NOT auto-logged-in)
+# Installs:
+# - Core CLI/dev tools: git, nvim, tmux, htop, jq, rg, fzf, etc
+# - Docker engine + compose plugin
+# - Tailscale (installed, NOT auto-logged-in)
 # - Miniforge (conda-forge) to /opt/conda
-# - JupyterLab + core data libs via conda
+# - JupyterLab + core data libs via conda base env
+# - ML-lite stack for realtime transform inference:
+#     scikit-learn, xgboost, lightgbm, joblib, onnxruntime
+#
+# Notes:
+# - Explicit /opt/conda/bin paths are used for conda/python/jupyter
+#   to avoid PATH ambiguity under sudo/root.
 # ============================================================
 
 log() { echo -e "\n[BOOTSTRAP] $*\n"; }
@@ -161,7 +164,10 @@ if [ -d /opt/conda/bin ]; then
 fi
 EOF
 
-  ln -sf /opt/conda/bin/conda /usr/local/bin/conda || true
+  # Convenience symlinks for interactive shells
+  ln -sf /opt/conda/bin/conda   /usr/local/bin/conda   || true
+  ln -sf /opt/conda/bin/python  /usr/local/bin/conda-python || true
+  ln -sf /opt/conda/bin/jupyter /usr/local/bin/jupyter || true
 }
 
 conda_install_dev_stack() {
@@ -180,15 +186,14 @@ conda_install_dev_stack() {
     pyarrow \
     requests \
     lxml \
+    matplotlib \
+    pyyaml \
     \
     scikit-learn \
     xgboost \
     lightgbm \
     joblib \
-    onnxruntime \
-    \
-    matplotlib \
-    pyyaml
+    onnxruntime
 
   su - "${TARGET_USER}" -c "/opt/conda/bin/python -m ipykernel install --user --name conda-base --display-name 'Python (conda-base)'" >/dev/null 2>&1 || true
 }
@@ -213,17 +218,19 @@ final_checks() {
   echo "nvim: $(nvim --version 2>/dev/null | head -n 1 || echo missing)"
   echo "docker: $(docker --version 2>/dev/null || echo missing)"
   echo "tailscale: $(tailscale version 2>/dev/null || echo missing)"
-  echo "conda: $(conda --version 2>/dev/null || echo missing)"
-  echo "jupyter: $(jupyter lab --version 2>/dev/null || echo missing)"
+
+  echo "conda: $(/opt/conda/bin/conda --version 2>/dev/null || echo missing)"
+  echo "jupyter: $(/opt/conda/bin/jupyter lab --version 2>/dev/null || echo missing)"
+  echo "conda-python: $(/opt/conda/bin/python --version 2>/dev/null || echo missing)"
 
   log "Bootstrap complete."
   echo "NEXT:"
   echo "  1) Reboot: sudo reboot"
   echo "  2) After reboot: docker run --rm hello-world"
   echo "  3) Authenticate Tailscale: sudo tailscale up"
-  echo "  4) ML-lite sanity:"
-  echo "       python -c \"import sklearn, xgboost, lightgbm, joblib\""
-  echo "       python -c \"import onnxruntime as ort; print(ort.__version__)\""
+  echo "  4) ML-lite sanity (explicit conda python):"
+  echo "       /opt/conda/bin/python -c \"import sklearn, xgboost, lightgbm, joblib\""
+  echo "       /opt/conda/bin/python -c \"import onnxruntime as ort; print(ort.__version__)\""
 }
 
 main() {

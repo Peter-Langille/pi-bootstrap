@@ -4,17 +4,17 @@
 
 A reproducible, single-command bootstrap script for Raspberry Pi OS (Lite or Full, 64-bit).
 
-This project provides a consistent baseline environment for Raspberry Pi 4 / 5 systems, turning a fresh OS install into a fully provisioned development node with Docker, Tailscale, Conda, JupyterLab, and an ML-lite stack suitable for real-time inference workloads.
+This project provides a consistent baseline environment for Raspberry Pi 4 / 5 systems, turning a fresh OS install into a fully provisioned development node with Docker, Tailscale, Conda (Miniforge), JupyterLab, and an ML-lite stack suitable for real-time inference workloads.
 
-The goal is simplicity and repeatability:
+Goal:
 
-> Flash OS → Run one command → Reboot → Done
+Flash OS → Run one command → Reboot → Done
 
 No configuration branches. No role-based variants. No interactive options.
 
----
-
-## Supported Platform
+------------------------------------------------------------
+SUPPORTED PLATFORM
+------------------------------------------------------------
 
 - Raspberry Pi OS Lite (64-bit recommended)
 - Raspberry Pi OS Full (64-bit supported)
@@ -26,82 +26,63 @@ The script will abort if run on:
 - x86_64
 - Non-Debian-based systems
 
----
+------------------------------------------------------------
+INSTALLATION (FRESH PI)
+------------------------------------------------------------
 
-## Installation (Fresh Pi)
+1) Flash OS
 
-### 1. Flash OS
-
-Flash **Raspberry Pi OS 64-bit** (Lite or Full) to microSD or NVMe.
-
+Flash Raspberry Pi OS 64-bit (Lite or Full) to microSD or NVMe.
 Enable SSH during imaging if desired.
 
-### 2. First Boot
+2) First Boot
 
 - Boot the Pi
 - Ensure network access
 - SSH into the device
 
-### 3. Run the Bootstrap Script
+3) Run the Bootstrap Script (ML-lite)
 
-For ML-lite version:
+curl -fsSL https://raw.githubusercontent.com/Peter-Langille/pi-bootstrap/main/raspi-bootstrap_v2_mllite.sh | sudo bash
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/<your-username>/pi-bootstrap/main/raspi-bootstrap_v2_mllite.sh | sudo bash
-```
+4) Reboot
 
-### 4. Reboot
-
-```bash
 sudo reboot
-```
 
----
+------------------------------------------------------------
+POST-BOOT SMOKE TESTS
+------------------------------------------------------------
 
-## Post-Boot Smoke Tests
+Docker:
 
-After reboot:
-
-### Docker
-
-```bash
 docker run --rm hello-world
-```
 
 If you receive a permission error, log out and back in (or reboot again).
 
-### Tailscale
+Tailscale:
 
-```bash
 sudo tailscale up
-```
 
 Follow browser-based authentication.
 
-### Conda
+Conda:
 
-```bash
 conda --version
-```
 
-### JupyterLab
+JupyterLab:
 
-```bash
 jupyter lab --version
-```
 
-### ML-lite Verification
+ML-lite Verification (explicit conda python):
 
-```bash
 /opt/conda/bin/python -c "import sklearn, xgboost, lightgbm, joblib"
 /opt/conda/bin/python -c "import onnxruntime as ort; print(ort.__version__)"
-```
 
----
+------------------------------------------------------------
+WHAT GETS INSTALLED
+------------------------------------------------------------
 
-## What Gets Installed
-
-### Core System Tools
+Core System Tools (apt):
 
 - ca-certificates
 - curl
@@ -126,9 +107,9 @@ jupyter lab --version
 - python3-venv
 - python3-pip
 
----
-
-### Docker
+------------------------------------------------------------
+DOCKER
+------------------------------------------------------------
 
 Installed via official Docker convenience script:
 
@@ -136,54 +117,52 @@ Installed via official Docker convenience script:
 - Docker CLI
 - Docker Compose plugin
 - Docker service enabled and started
-- User added to `docker` group
+- User added to docker group
 
----
-
-### Tailscale
+------------------------------------------------------------
+TAILSCALE
+------------------------------------------------------------
 
 Installed via official installer:
 
 - tailscaled service enabled and started
 - Not automatically authenticated
-- Requires manual `sudo tailscale up`
+- Requires manual sudo tailscale up
 
----
-
-### Conda (Miniforge)
+------------------------------------------------------------
+CONDA (MINIFORGE)
+------------------------------------------------------------
 
 Installed to:
 
-```
 /opt/conda
-```
 
 Features:
 
 - Miniforge (conda-forge based)
-- System-wide PATH configuration
+- System-wide PATH configuration via /etc/profile.d/conda.sh
 - Base environment updated
 - Auto-activation of base disabled
 
----
+------------------------------------------------------------
+PYTHON / DATA / ML-LITE STACK
+------------------------------------------------------------
 
-## Python / Data Stack (Base Environment)
+Installed into the conda base environment:
 
-Installed into conda base environment:
+Core Data + Notebook:
 
-### Core Data Libraries
-
+- jupyterlab
+- ipykernel
 - numpy
 - pandas
 - pyarrow
 - requests
 - lxml
-- pyyaml
 - matplotlib
-- ipykernel
-- jupyterlab
+- pyyaml
 
-### ML-lite Stack (Inference + Light Training)
+ML-lite (inference + light training):
 
 - scikit-learn
 - xgboost
@@ -191,28 +170,27 @@ Installed into conda base environment:
 - joblib
 - onnxruntime
 
-This stack is suitable for:
+This stack supports:
 
 - Classical ML training
 - Tree-based boosting
-- Real-time model inference
-- Loading serialized models in transform pipelines
+- Real-time model inference in transform pipelines
+- Loading serialized models (joblib)
 - ONNX-based portable inference
 
-TensorFlow and PyTorch are intentionally not installed by default.
+TensorFlow and PyTorch are intentionally NOT installed by default.
 
----
+------------------------------------------------------------
+QUALITY-OF-LIFE DEFAULTS
+------------------------------------------------------------
 
-## Quality-of-Life Defaults
+- Default editor set to nvim
+- ~/bin directory created for the user
+- Conda PATH available in login shells via /etc/profile.d/conda.sh
 
-- Default editor set to `nvim`
-- `/etc/profile.d/conda.sh` created for PATH configuration
-- `/etc/profile.d/editor.sh` sets `EDITOR` and `VISUAL`
-- `~/bin` directory created for user
-
----
-
-## What This Script Does NOT Do
+------------------------------------------------------------
+WHAT THIS SCRIPT DOES NOT DO
+------------------------------------------------------------
 
 - Does NOT copy private SSH keys
 - Does NOT auto-authenticate Tailscale
@@ -221,9 +199,9 @@ TensorFlow and PyTorch are intentionally not installed by default.
 - Does NOT format or mount NVMe drives
 - Does NOT install deep learning frameworks (TensorFlow / PyTorch)
 
----
-
-## Philosophy
+------------------------------------------------------------
+PHILOSOPHY
+------------------------------------------------------------
 
 This repository provides infrastructure glue — not project code.
 
@@ -231,29 +209,25 @@ All project logic should live in separate repositories.
 
 The Raspberry Pi should be disposable:
 
-- If a microSD fails → reflash → run bootstrap → continue working.
-- GitHub remains the source of truth for code.
-- Devices remain reproducible tools, not handcrafted artifacts.
+If a microSD fails → reflash → run bootstrap → continue working.
+GitHub remains the source of truth for code.
+Devices remain reproducible tools, not handcrafted artifacts.
 
----
+------------------------------------------------------------
+UPDATING THE BOOTSTRAP
+------------------------------------------------------------
 
-## Updating the Bootstrap
+After modifying the script or documentation:
 
-After modifying the script:
-
-```bash
 git add raspi-bootstrap_v2_mllite.sh README.md
-git commit -m "Update ML-lite bootstrap and documentation"
+git commit -m "Fix conda python checks and document ML-lite verification"
 git push
-```
 
-Future installs will automatically use the updated version.
+------------------------------------------------------------
+VERSIONING
+------------------------------------------------------------
 
----
-
-## Versioning
-
-Currently operating on rolling `main`.
+Currently operating on rolling main branch.
 
 Tag releases if strict reproducibility is required.
 
