@@ -397,4 +397,39 @@ Type "yes"
 
 Continue working.
 ============================================================
+------------------------------------------------------------
+Nice Layer (Optional)
+------------------------------------------------------------
+
+Script:
+extras/raspi-nice-setup_v5.sh
+
+Purpose:
+Applies user-level development quality-of-life configuration
+after bootstrap.
+
+Design Principles:
+- Idempotent (safe to re-run)
+- Never writes into user home as root
+- All home writes performed via sudo -u target user
+- Font install is best-effort and non-fatal
+- No GitHub API dependency
+- No jq dependency
+- Uses stable Nerd Font release URL
+
+Font Install Behavior:
+- Downloads FiraCode Nerd Font from:
+  https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.tar.xz
+- Extracts into:
+  ~/.local/share/fonts/FiraCodeNerdFont
+- Runs fc-cache
+- Will warn but not fail if network interruption occurs
+
+Run:
+curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/extras/raspi-nice-setup_v5.sh | sudo bash
+
+Operational Notes:
+- New SSH session required after run.
+- Nerd Font must also be installed on client machine
+  (icons render on the terminal host, not the Pi).
 

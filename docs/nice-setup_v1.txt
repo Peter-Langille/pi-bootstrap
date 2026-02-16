@@ -1,81 +1,78 @@
 ============================================================
-PI NICE SETUP (OPTIONAL) — QUICK GUIDE
+RASPI NICE SETUP — V1
 ============================================================
 
-PURPOSE
+Purpose
 -------
-Adds convenience tooling to a Pi after base bootstrap:
-- Starship prompt (with conda env in prompt)
-- FiraCode Nerd Font (best effort)
-- Global gitignore + git config
-- Baseline tmux.conf
-- Small alias pack
+Adds quality-of-life configuration to a Raspberry Pi dev box
+after running raspi-bootstrap.
 
-This is OPTIONAL and separate from the proven bootstrap.
+This layer configures:
 
-------------------------------------------------------------
-INSTALL
-------------------------------------------------------------
+- Starship prompt
+- Conda prompt behavior
+- Nerd Font (FiraCode Nerd Font)
+- Bash shortcuts
+- ~/.bashrc.d loader
+- Global gitignore
+- Minimal tmux configuration
 
-From repo root:
+Run
+---
 
-chmod +x extras/raspi-nice-setup_v1.sh
-sudo bash extras/raspi-nice-setup_v1.sh
+curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/extras/raspi-nice-setup_v5.sh | sudo bash
 
-Notes:
-- Script uses sudo only to reliably write into the target user's home.
-- Most changes are per-user files.
-- Safe to re-run: it will skip re-install and backup existing configs.
 
-------------------------------------------------------------
-WHAT CHANGES IT MAKES
-------------------------------------------------------------
+What It Does
+------------
 
-Writes/updates:
-- ~/.local/bin/starship  (if missing)
-- ~/.config/starship.toml  (backs up existing)
-- ~/.bashrc  (adds guarded blocks: PATH, source bashrc.d, starship init)
-- ~/.bashrc.d/pi-nice.sh  (aliases)
-- ~/.config/git/ignore  (global gitignore)
-- ~/.tmux.conf  (backs up existing)
+1. Installs Starship into:
+   ~/.local/bin
 
-Conda prompt:
-- Runs: conda config --set changeps1 False
-  This prevents conda from also changing PS1, so Starship is clean.
+2. Writes:
+   ~/.config/starship.toml
 
-Fonts:
-- Installs to: ~/.local/share/fonts/FiraCodeNerdFont
-- Runs fc-cache if available
+3. Appends guarded blocks to:
+   ~/.bashrc
 
-------------------------------------------------------------
-VERIFY
-------------------------------------------------------------
+4. Creates:
+   ~/.bashrc.d/pi-nice.sh
 
-Open a new SSH session, then:
+5. Sets:
+   conda changeps1 = False
+   (prevents conda from altering PS1)
+
+6. Installs FiraCode Nerd Font (user-local):
+   ~/.local/share/fonts/FiraCodeNerdFont
+
+7. Writes global gitignore:
+   ~/.config/git/ignore
+
+8. Writes minimal tmux config:
+   ~/.tmux.conf
+
+
+Important
+---------
+
+• The Nerd Font must also be installed on the machine rendering the terminal
+  (your laptop) if accessing the Pi via SSH.
+
+• If icons show as boxes:
+    - Install Nerd Font locally
+    - Set your terminal font to “FiraCode Nerd Font”
+    - Restart terminal
+
+
+Verification
+------------
+
+Open new shell and verify:
 
 starship --version
-echo $CONDA_DEFAULT_ENV
 git config --global core.excludesfile
 tmux -V
+echo "  ➜"
 
-If you want to see conda in the prompt:
-- Activate an env: conda activate base
-- Starship should show the conda segment.
-
-------------------------------------------------------------
-ROLLBACK
-------------------------------------------------------------
-
-Starship:
-- Remove starship init lines from ~/.bashrc (pi-nice block)
-- Remove ~/.config/starship.toml
-
-tmux:
-- Restore from ~/.tmux.conf.bak_*
-
-gitignore:
-- Remove ~/.config/git/ignore
-- Unset: git config --global --unset core.excludesfile
-
-============================================================
+If glyphs render correctly → setup is complete.
 
