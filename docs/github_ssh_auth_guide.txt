@@ -1,0 +1,141 @@
+============================================================
+GITHUB SSH AUTH — SETUP GUIDE (RASPBERRY PI / LINUX)
+============================================================
+
+PURPOSE
+-------
+Set up SSH-based authentication to GitHub so you can:
+- git clone/push using git@github.com:...
+- avoid HTTPS credential prompts
+- keep workflows consistent across devices
+
+SCOPE
+-----
+Applies to:
+- Raspberry Pi OS / Debian / Ubuntu
+- OpenSSH client
+
+------------------------------------------------------------
+STEP 1 — CHECK EXISTING SSH KEYS
+------------------------------------------------------------
+
+Command:
+ls -la ~/.ssh
+
+Explanation:
+- If you already have an SSH key pair (id_ed25519 + id_ed25519.pub),
+  you may not need to generate a new one.
+- If ~/.ssh does not exist or no keypair is present, proceed to Step 2.
+
+------------------------------------------------------------
+STEP 2 — GENERATE A NEW ED25519 KEY (RECOMMENDED)
+------------------------------------------------------------
+
+Command:
+ssh-keygen -t ed25519 -C "YOUR_EMAIL_HERE"
+
+Explanation:
+- Creates a modern, strong SSH keypair.
+- When prompted for file location, accept default:
+  ~/.ssh/id_ed25519
+- Passphrase is optional:
+  - No passphrase = convenient for headless use
+  - Passphrase = more secure
+
+------------------------------------------------------------
+STEP 3 — START SSH AGENT AND ADD KEY
+------------------------------------------------------------
+
+Commands:
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+Explanation:
+- ssh-agent holds your key in memory so git/ssh can use it automatically.
+
+------------------------------------------------------------
+STEP 4 — ADD PUBLIC KEY TO GITHUB
+------------------------------------------------------------
+
+Command (prints public key):
+cat ~/.ssh/id_ed25519.pub
+
+Action:
+- Copy the full output line.
+- GitHub → Settings → SSH and GPG keys → New SSH key
+- Paste the key and save.
+
+Explanation:
+- This authorizes THIS device to access your GitHub account via SSH.
+
+------------------------------------------------------------
+STEP 5 — TEST AUTH TO GITHUB
+------------------------------------------------------------
+
+Command:
+ssh -T git@github.com
+
+Expected:
+- First time: prompt to trust github.com host key → type "yes"
+- Success message indicating you authenticated.
+
+If you get:
+"Permission denied (publickey)."
+- The public key is not added to GitHub, or the agent/key isn’t being used.
+
+------------------------------------------------------------
+STEP 6 — USE SSH REMOTES IN GIT
+------------------------------------------------------------
+
+Check current remote:
+git remote -v
+
+If it shows HTTPS and you want SSH, switch it:
+
+git remote set-url origin git@github.com:USERNAME/REPO.git
+
+Verify:
+git remote -v
+
+Explanation:
+- SSH remote format: git@github.com:USERNAME/REPO.git
+- HTTPS remote format: https://github.com/USERNAME/REPO.git
+
+------------------------------------------------------------
+TROUBLESHOOTING
+------------------------------------------------------------
+
+A) Host key changed warning after reflashing SD / reinstalling OS:
+
+ssh-keygen -R <hostname-or-ip>
+
+Then reconnect:
+ssh -T git@github.com
+(or ssh user@host)
+
+Explanation:
+- Reflashing regenerates SSH host keys → your laptop sees a mismatch.
+
+B) See which keys SSH is offering:
+
+ssh -vT git@github.com
+
+Look for lines like:
+"Offering public key: ..."
+
+C) Confirm key is loaded in agent:
+
+ssh-add -l
+
+D) Force SSH to use a specific key (quick test):
+
+ssh -i ~/.ssh/id_ed25519 -T git@github.com
+
+------------------------------------------------------------
+NOTES
+------------------------------------------------------------
+
+- SSH keys are per-device. Each Pi/laptop you use can have its own key.
+- Do NOT copy private keys between devices unless you deliberately want shared identity.
+============================================================
+

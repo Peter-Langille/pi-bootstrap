@@ -1,0 +1,187 @@
+============================================================
+JUPYTER ACCESS GUIDE — LOCAL + REMOTE (TAILSCALE)
+============================================================
+
+PURPOSE
+-------
+Run JupyterLab on a headless Raspberry Pi and access it securely
+from a laptop:
+
+- On the same LAN (local access)
+- From anywhere (remote access via Tailscale)
+
+No router configuration.
+No exposing ports to the internet.
+No insecure bindings.
+
+------------------------------------------------------------
+SECTION 1 — LOCAL LAN ACCESS (SSH TUNNEL METHOD)
+------------------------------------------------------------
+
+STEP 1 — Start Jupyter on the Pi
+
+Command (on the Pi):
+
+/opt/conda/bin/jupyter lab --no-browser --ip=127.0.0.1 --port=8888
+
+Explanation:
+- --no-browser prevents Jupyter from trying to open a GUI.
+- --ip=127.0.0.1 binds Jupyter to localhost ONLY.
+- This means it is NOT exposed to the LAN.
+- --port=8888 is the standard Jupyter port.
+
+Leave this terminal running.
+
+
+STEP 2 — Create SSH Tunnel from Laptop
+
+Command (on laptop):
+
+ssh -L 8888:localhost:8888 peter@pi-hostname
+
+Explanation:
+- This forwards your laptop's port 8888
+  to the Pi’s port 8888 over SSH.
+- The tunnel is encrypted.
+- Jupyter remains bound locally on the Pi.
+- Nothing is exposed to the LAN.
+
+
+STEP 3 — Open Browser on Laptop
+
+Open:
+
+http://localhost:8888
+
+Explanation:
+- Your browser connects to your own laptop.
+- SSH forwards the traffic to the Pi.
+- Jupyter serves the notebook interface.
+- You may need to paste the Jupyter token shown in Step 1.
+
+
+SECURITY MODEL:
+- Jupyter is never exposed to the network.
+- Only accessible through authenticated SSH.
+- Best-practice configuration.
+
+------------------------------------------------------------
+SECTION 2 — REMOTE ACCESS USING TAILSCALE
+------------------------------------------------------------
+
+ASSUMPTIONS:
+- Tailscale installed on Pi and laptop.
+- Both logged in to the same Tailnet.
+- Pi is powered on.
+
+STEP 1 — Confirm Devices See Each Other
+
+On either machine:
+
+tailscale status
+
+Explanation:
+- Confirms both devices are online.
+- Shows each device’s Tailscale IP.
+
+
+STEP 2 — Get the Pi’s Tailscale IP
+
+On the Pi:
+
+tailscale ip -4
+
+Example output:
+
+100.87.45.12
+
+Explanation:
+- This is the Pi’s private Tailscale address.
+- Works from anywhere in the world.
+- No router config required.
+
+
+STEP 3 — Start Jupyter on the Pi (same as local)
+
+/opt/conda/bin/jupyter lab --no-browser --ip=127.0.0.1 --port=8888
+
+Explanation:
+- Still bound to localhost.
+- Still not exposed to network.
+
+
+STEP 4 — SSH Tunnel Over Tailscale
+
+On laptop:
+
+ssh -L 8888:localhost:8888 peter@100.87.45.12
+
+Explanation:
+- SSH runs over Tailscale network.
+- Tunnel forwards port 8888.
+- Same secure model as local.
+- Works from hotel WiFi, airport, etc.
+
+
+STEP 5 — Open Browser
+
+http://localhost:8888
+
+Explanation:
+- Same as local workflow.
+- Jupyter session now accessed remotely.
+
+
+------------------------------------------------------------
+ALTERNATIVE METHOD (NOT RECOMMENDED)
+------------------------------------------------------------
+
+Start Jupyter with:
+
+/opt/conda/bin/jupyter lab --no-browser --ip=0.0.0.0 --port=8888
+
+Then access directly via:
+
+http://100.87.45.12:8888
+
+Explanation:
+- Jupyter listens on all interfaces.
+- Accessible to any device in your Tailnet.
+- Still encrypted by Tailscale.
+- Less strict than SSH tunnel method.
+
+Recommended only if convenience outweighs strict isolation.
+
+
+------------------------------------------------------------
+TROUBLESHOOTING
+------------------------------------------------------------
+
+If browser does not connect:
+- Ensure Jupyter is running.
+- Confirm SSH tunnel session is open.
+- Verify correct Tailscale IP.
+- Check that port 8888 is not already in use.
+
+If SSH says host key changed:
+- You reflashed SD.
+- Run:
+  ssh-keygen -R <hostname-or-ip>
+
+
+------------------------------------------------------------
+SUMMARY
+------------------------------------------------------------
+
+Best Practice:
+- Always run Jupyter bound to 127.0.0.1
+- Always access via SSH tunnel
+- Use Tailscale only as secure transport layer
+
+This provides:
+- Zero router configuration
+- Zero public exposure
+- Strong encryption
+- Simple mental model
+============================================================
+

@@ -1,4 +1,5 @@
-# **STATUS:** UNTESTED - not yet validated - DO NOT USE
+# **STATUS:** Tested on: Pi 5, Raspberry Pi OS Debian 13 (trixie), 2/16/26, results - PASS.
+
 # Raspberry Pi Bootstrap
 
 A reproducible, single-command bootstrap script for Raspberry Pi OS (Lite or Full, 64-bit) aligned with Debian 13 (trixie).
@@ -235,4 +236,165 @@ Current authoritative script:
 raspi-bootstrap_v3_mllite_trixie.sh
 
 Future versions should increment the version number.
+
+
+============================================================
+SSH HOST KEY CHANGED AFTER REFLASH — RESOLUTION GUIDE
+============================================================
+
+PURPOSE
+-------
+When you reflash a Raspberry Pi SD card and reuse the same
+hostname or IP address, SSH will detect a host key mismatch.
+
+This guide explains:
+- Why it happens
+- How to fix it safely
+- How to avoid future confusion
+
+------------------------------------------------------------
+WHY THIS HAPPENS
+------------------------------------------------------------
+
+Each OS installation generates unique SSH host keys:
+
+/etc/ssh/ssh_host_*
+
+When you:
+- Reflash the SD card
+- Reinstall the OS
+- Keep the same hostname or IP
+
+The new system generates NEW host keys.
+
+Your laptop still remembers the OLD key in:
+
+~/.ssh/known_hosts
+
+SSH then warns:
+
+"REMOTE HOST IDENTIFICATION HAS CHANGED!"
+
+This is a security feature to prevent man-in-the-middle attacks.
+
+------------------------------------------------------------
+WHEN IT IS SAFE TO PROCEED
+------------------------------------------------------------
+
+It is safe to proceed IF:
+
+- You intentionally reflashed the SD card
+- You control the LAN
+- You expect the host key to change
+
+If you did NOT reflash and see this warning,
+investigate before proceeding.
+
+------------------------------------------------------------
+STEP 1 — REMOVE THE OLD HOST KEY ENTRY
+------------------------------------------------------------
+
+Use the exact command SSH suggests:
+
+ssh-keygen -R <hostname-or-ip>
+
+Example (hostname):
+
+ssh-keygen -R pi5-dev-4.local
+
+Example (IP address):
+
+ssh-keygen -R 192.168.1.42
+
+This removes the old fingerprint from:
+
+~/.ssh/known_hosts
+
+------------------------------------------------------------
+STEP 2 — RECONNECT
+------------------------------------------------------------
+
+ssh user@hostname
+
+Example:
+
+ssh peter@pi5-dev-4.local
+
+You will see:
+
+"The authenticity of host ... can't be established."
+Type:
+
+yes
+
+This stores the new host key.
+
+Connection proceeds normally.
+
+------------------------------------------------------------
+VERIFY NEW HOST KEY ENTRY (OPTIONAL)
+------------------------------------------------------------
+
+To confirm it was added:
+
+ssh-keygen -F pi5-dev-4.local
+
+This shows the new stored fingerprint.
+
+------------------------------------------------------------
+ADVANCED: MANUAL CLEANUP IF NEEDED
+------------------------------------------------------------
+
+If the automatic removal fails:
+
+Open the file:
+
+nvim ~/.ssh/known_hosts
+
+Locate the offending line (SSH tells you the line number)
+and delete it manually.
+
+Save and retry SSH.
+
+------------------------------------------------------------
+MULTIPLE SD CARDS WITH SAME HOSTNAME
+------------------------------------------------------------
+
+If you frequently swap SD cards that share
+the same hostname, you will see this warning
+each time the OS differs.
+
+Best practice:
+- Give each SD card a unique hostname
+OR
+- Accept that you'll need to remove the key
+  whenever switching images
+
+------------------------------------------------------------
+BEST PRACTICE FOR BOOTSTRAP TESTING
+------------------------------------------------------------
+
+When testing a new SD image:
+
+1) Expect host key warning
+2) Run ssh-keygen -R <hostname>
+3) Reconnect and accept new fingerprint
+4) Proceed with bootstrap
+
+This is normal infrastructure behavior.
+
+------------------------------------------------------------
+SUMMARY
+------------------------------------------------------------
+
+Reflashing regenerates SSH host keys.
+SSH warns because it protects you.
+
+Resolution:
+ssh-keygen -R <host>
+Reconnect
+Type "yes"
+
+Continue working.
+============================================================
 
