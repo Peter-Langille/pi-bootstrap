@@ -1,8 +1,7 @@
 # **STATUS:** UNTESTED - not yet validated - DO NOT USE
-
 # Raspberry Pi Bootstrap
 
-A reproducible, single-command bootstrap script for Raspberry Pi OS (Lite or Full, 64-bit).
+A reproducible, single-command bootstrap script for Raspberry Pi OS (Lite or Full, 64-bit) aligned with Debian 13 (trixie).
 
 This project provides a consistent baseline environment for Raspberry Pi 4 / 5 systems, turning a fresh OS install into a fully provisioned development node with Docker, Tailscale, Conda (Miniforge), JupyterLab, and an ML-lite stack suitable for real-time inference workloads.
 
@@ -10,7 +9,9 @@ Goal:
 
 Flash OS → Run one command → Reboot → Done
 
-No configuration branches. No role-based variants. No interactive options.
+No configuration branches.
+No role-based variants.
+No interactive prompts during install.
 
 ------------------------------------------------------------
 SUPPORTED PLATFORM
@@ -18,8 +19,8 @@ SUPPORTED PLATFORM
 
 - Raspberry Pi OS Lite (64-bit recommended)
 - Raspberry Pi OS Full (64-bit supported)
-- Raspberry Pi 4 / 5
-- arm64 / aarch64 architecture
+- Debian 13 (trixie) on Raspberry Pi hardware
+- arm64 / aarch64 architecture only
 
 The script will abort if run on:
 - 32-bit ARM
@@ -32,8 +33,8 @@ INSTALLATION (FRESH PI)
 
 1) Flash OS
 
-Flash Raspberry Pi OS 64-bit (Lite or Full) to microSD or NVMe.
-Enable SSH during imaging if desired.
+Flash Raspberry Pi OS 64-bit (Lite or Full).
+Set hostname and enable SSH during imaging.
 
 2) First Boot
 
@@ -41,9 +42,9 @@ Enable SSH during imaging if desired.
 - Ensure network access
 - SSH into the device
 
-3) Run the Bootstrap Script (ML-lite)
+3) Run the Bootstrap Script (v3 ML-lite)
 
-curl -fsSL https://raw.githubusercontent.com/Peter-Langille/pi-bootstrap/main/raspi-bootstrap_v2_mllite.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Peter-Langille/pi-bootstrap/main/raspi-bootstrap_v3_mllite_trixie.sh | sudo bash
 
 4) Reboot
 
@@ -57,13 +58,9 @@ Docker:
 
 docker run --rm hello-world
 
-If you receive a permission error, log out and back in (or reboot again).
-
 Tailscale:
 
 sudo tailscale up
-
-Follow browser-based authentication.
 
 Conda:
 
@@ -73,7 +70,7 @@ JupyterLab:
 
 jupyter lab --version
 
-ML-lite Verification (explicit conda python):
+ML-lite Verification:
 
 /opt/conda/bin/python -c "import sklearn, xgboost, lightgbm, joblib"
 /opt/conda/bin/python -c "import onnxruntime as ort; print(ort.__version__)"
@@ -101,11 +98,28 @@ Core System Tools (apt):
 - zip
 - gnupg
 - lsb-release
-- software-properties-common
 - build-essential
 - python3
 - python3-venv
 - python3-pip
+
+Note:
+software-properties-common is intentionally NOT installed.
+It is not required and is not available in many Debian 13 (trixie) setups.
+
+------------------------------------------------------------
+APT HARDENING
+------------------------------------------------------------
+
+The bootstrap performs a fully non-interactive system upgrade.
+
+It uses dpkg options to:
+
+- Automatically accept default config handling
+- Preserve existing configuration files
+- Prevent blocking prompts during upgrade
+
+This ensures the script runs unattended on both Lite and Full OS installs.
 
 ------------------------------------------------------------
 DOCKER
@@ -140,15 +154,15 @@ Installed to:
 Features:
 
 - Miniforge (conda-forge based)
-- System-wide PATH configuration via /etc/profile.d/conda.sh
 - Base environment updated
 - Auto-activation of base disabled
+- PATH available via /etc/profile.d/conda.sh
 
 ------------------------------------------------------------
 PYTHON / DATA / ML-LITE STACK
 ------------------------------------------------------------
 
-Installed into the conda base environment:
+Installed into conda base environment:
 
 Core Data + Notebook:
 
@@ -162,7 +176,7 @@ Core Data + Notebook:
 - matplotlib
 - pyyaml
 
-ML-lite (inference + light training):
+ML-lite:
 
 - scikit-learn
 - xgboost
@@ -170,23 +184,23 @@ ML-lite (inference + light training):
 - joblib
 - onnxruntime
 
-This stack supports:
+Designed for:
 
 - Classical ML training
 - Tree-based boosting
-- Real-time model inference in transform pipelines
-- Loading serialized models (joblib)
-- ONNX-based portable inference
+- Real-time model inference
+- Transform-stage model execution
+- ONNX runtime inference
 
-TensorFlow and PyTorch are intentionally NOT installed by default.
+Deep learning frameworks (TensorFlow, PyTorch) are intentionally NOT installed by default.
 
 ------------------------------------------------------------
 QUALITY-OF-LIFE DEFAULTS
 ------------------------------------------------------------
 
 - Default editor set to nvim
-- ~/bin directory created for the user
-- Conda PATH available in login shells via /etc/profile.d/conda.sh
+- ~/bin directory created
+- SSH enabled
 
 ------------------------------------------------------------
 WHAT THIS SCRIPT DOES NOT DO
@@ -197,37 +211,28 @@ WHAT THIS SCRIPT DOES NOT DO
 - Does NOT change hostname
 - Does NOT modify user dotfiles
 - Does NOT format or mount NVMe drives
-- Does NOT install deep learning frameworks (TensorFlow / PyTorch)
+- Does NOT install TensorFlow or PyTorch
 
 ------------------------------------------------------------
 PHILOSOPHY
 ------------------------------------------------------------
 
-This repository provides infrastructure glue — not project code.
+The Raspberry Pi should be disposable infrastructure.
 
-All project logic should live in separate repositories.
+If a microSD fails:
 
-The Raspberry Pi should be disposable:
+Reflash → Run bootstrap → Continue working.
 
-If a microSD fails → reflash → run bootstrap → continue working.
-GitHub remains the source of truth for code.
-Devices remain reproducible tools, not handcrafted artifacts.
-
-------------------------------------------------------------
-UPDATING THE BOOTSTRAP
-------------------------------------------------------------
-
-After modifying the script or documentation:
-
-git add raspi-bootstrap_v2_mllite.sh README.md
-git commit -m "Fix conda python checks and document ML-lite verification"
-git push
+All project code belongs in separate repositories.
+This repository exists to standardize infrastructure only.
 
 ------------------------------------------------------------
 VERSIONING
 ------------------------------------------------------------
 
-Currently operating on rolling main branch.
+Current authoritative script:
 
-Tag releases if strict reproducibility is required.
+raspi-bootstrap_v3_mllite_trixie.sh
+
+Future versions should increment the version number.
 
