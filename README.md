@@ -2,48 +2,37 @@
 
 # Raspberry Pi Bootstrap
 
-A reproducible, single-command bootstrap script for Raspberry Pi OS Lite (64-bit).
+A reproducible, single-command bootstrap script for Raspberry Pi OS (Lite or Full, 64-bit).
 
-This project provides a consistent baseline environment for Raspberry Pi 4 / 5 systems, turning a fresh OS install into a fully provisioned development node with Docker, Tailscale, Conda, JupyterLab, and standard CLI tooling.
+This project provides a consistent baseline environment for Raspberry Pi 4 / 5 systems, turning a fresh OS install into a fully provisioned development node with Docker, Tailscale, Conda, JupyterLab, and an ML-lite stack suitable for real-time inference workloads.
 
 The goal is simplicity and repeatability:
 
 > Flash OS → Run one command → Reboot → Done
 
-No configuration branches. No role-based variants. No hidden options.
+No configuration branches. No role-based variants. No interactive options.
 
 ---
 
-## Design Goals
-
-- Consistent environment across all Raspberry Pi devices
-- One-command installation
-- No interactive prompts
-- No secrets embedded in the script
-- Safe to re-run (idempotent where practical)
-- Avoid device-specific configuration (hostname, SSH keys, etc.)
-- Works on Raspberry Pi OS Lite (Debian-based, 64-bit ARM)
-
----
-
-## Target Platform
+## Supported Platform
 
 - Raspberry Pi OS Lite (64-bit recommended)
-- Raspberry Pi 4 or Raspberry Pi 5
+- Raspberry Pi OS Full (64-bit supported)
+- Raspberry Pi 4 / 5
 - arm64 / aarch64 architecture
 
 The script will abort if run on:
-- 32-bit ARM (armv7/armv6)
+- 32-bit ARM
 - x86_64
-- Non-Debian systems
+- Non-Debian-based systems
 
 ---
 
-## Installation (On a Fresh Pi)
+## Installation (Fresh Pi)
 
 ### 1. Flash OS
 
-Flash **Raspberry Pi OS Lite (64-bit)** to microSD or NVMe.
+Flash **Raspberry Pi OS 64-bit** (Lite or Full) to microSD or NVMe.
 
 Enable SSH during imaging if desired.
 
@@ -55,8 +44,10 @@ Enable SSH during imaging if desired.
 
 ### 3. Run the Bootstrap Script
 
+For ML-lite version:
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<your-username>/pi-bootstrap/main/raspi-bootstrap.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/<your-username>/pi-bootstrap/main/raspi-bootstrap_v2_mllite.sh | sudo bash
 ```
 
 ### 4. Reboot
@@ -79,13 +70,13 @@ docker run --rm hello-world
 
 If you receive a permission error, log out and back in (or reboot again).
 
-### Tailscale (manual authentication)
+### Tailscale
 
 ```bash
 sudo tailscale up
 ```
 
-Follow the browser-based login flow.
+Follow browser-based authentication.
 
 ### Conda
 
@@ -97,6 +88,13 @@ conda --version
 
 ```bash
 jupyter lab --version
+```
+
+### ML-lite Verification
+
+```bash
+/opt/conda/bin/python -c "import sklearn, xgboost, lightgbm, joblib"
+/opt/conda/bin/python -c "import onnxruntime as ort; print(ort.__version__)"
 ```
 
 ---
@@ -144,7 +142,7 @@ Installed via official Docker convenience script:
 
 ### Tailscale
 
-Installed via official Tailscale installer:
+Installed via official installer:
 
 - tailscaled service enabled and started
 - Not automatically authenticated
@@ -169,25 +167,39 @@ Features:
 
 ---
 
-### Python Dev Stack (via Conda Base Environment)
+## Python / Data Stack (Base Environment)
 
-Installed packages:
+Installed into conda base environment:
 
-- jupyterlab
-- ipykernel
+### Core Data Libraries
+
 - numpy
 - pandas
 - pyarrow
 - requests
 - lxml
+- pyyaml
+- matplotlib
+- ipykernel
+- jupyterlab
 
-An IPython kernel named:
+### ML-lite Stack (Inference + Light Training)
 
-```
-Python (conda-base)
-```
+- scikit-learn
+- xgboost
+- lightgbm
+- joblib
+- onnxruntime
 
-is registered for Jupyter.
+This stack is suitable for:
+
+- Classical ML training
+- Tree-based boosting
+- Real-time model inference
+- Loading serialized models in transform pipelines
+- ONNX-based portable inference
+
+TensorFlow and PyTorch are intentionally not installed by default.
 
 ---
 
@@ -196,22 +208,18 @@ is registered for Jupyter.
 - Default editor set to `nvim`
 - `/etc/profile.d/conda.sh` created for PATH configuration
 - `/etc/profile.d/editor.sh` sets `EDITOR` and `VISUAL`
-- `~/bin` directory created for the user
-- Informational MOTD block added
+- `~/bin` directory created for user
 
 ---
 
-## What This Script Intentionally Does NOT Do
+## What This Script Does NOT Do
 
 - Does NOT copy private SSH keys
 - Does NOT auto-authenticate Tailscale
 - Does NOT change hostname
 - Does NOT modify user dotfiles
 - Does NOT format or mount NVMe drives
-- Does NOT install project-specific software
-- Does NOT create multiple environment profiles
-
-This keeps the bootstrap generic and safe.
+- Does NOT install deep learning frameworks (TensorFlow / PyTorch)
 
 ---
 
@@ -225,27 +233,27 @@ The Raspberry Pi should be disposable:
 
 - If a microSD fails → reflash → run bootstrap → continue working.
 - GitHub remains the source of truth for code.
-- The device remains a reproducible tool, not a handcrafted artifact.
+- Devices remain reproducible tools, not handcrafted artifacts.
 
 ---
 
 ## Updating the Bootstrap
 
-If you update `raspi-bootstrap.sh`:
+After modifying the script:
 
 ```bash
-git add raspi-bootstrap.sh
-git commit -m "Update bootstrap"
+git add raspi-bootstrap_v2_mllite.sh README.md
+git commit -m "Update ML-lite bootstrap and documentation"
 git push
 ```
 
-All future Pi installs will use the updated script automatically.
+Future installs will automatically use the updated version.
 
 ---
 
 ## Versioning
 
-This project currently operates as a rolling `main` branch.
+Currently operating on rolling `main`.
 
-You may optionally introduce tagged releases in the future if strict version pinning becomes necessary.
+Tag releases if strict reproducibility is required.
 
