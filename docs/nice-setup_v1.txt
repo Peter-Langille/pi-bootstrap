@@ -1,0 +1,81 @@
+============================================================
+PI NICE SETUP (OPTIONAL) — QUICK GUIDE
+============================================================
+
+PURPOSE
+-------
+Adds convenience tooling to a Pi after base bootstrap:
+- Starship prompt (with conda env in prompt)
+- FiraCode Nerd Font (best effort)
+- Global gitignore + git config
+- Baseline tmux.conf
+- Small alias pack
+
+This is OPTIONAL and separate from the proven bootstrap.
+
+------------------------------------------------------------
+INSTALL
+------------------------------------------------------------
+
+From repo root:
+
+chmod +x extras/raspi-nice-setup_v1.sh
+sudo bash extras/raspi-nice-setup_v1.sh
+
+Notes:
+- Script uses sudo only to reliably write into the target user's home.
+- Most changes are per-user files.
+- Safe to re-run: it will skip re-install and backup existing configs.
+
+------------------------------------------------------------
+WHAT CHANGES IT MAKES
+------------------------------------------------------------
+
+Writes/updates:
+- ~/.local/bin/starship  (if missing)
+- ~/.config/starship.toml  (backs up existing)
+- ~/.bashrc  (adds guarded blocks: PATH, source bashrc.d, starship init)
+- ~/.bashrc.d/pi-nice.sh  (aliases)
+- ~/.config/git/ignore  (global gitignore)
+- ~/.tmux.conf  (backs up existing)
+
+Conda prompt:
+- Runs: conda config --set changeps1 False
+  This prevents conda from also changing PS1, so Starship is clean.
+
+Fonts:
+- Installs to: ~/.local/share/fonts/FiraCodeNerdFont
+- Runs fc-cache if available
+
+------------------------------------------------------------
+VERIFY
+------------------------------------------------------------
+
+Open a new SSH session, then:
+
+starship --version
+echo $CONDA_DEFAULT_ENV
+git config --global core.excludesfile
+tmux -V
+
+If you want to see conda in the prompt:
+- Activate an env: conda activate base
+- Starship should show the conda segment.
+
+------------------------------------------------------------
+ROLLBACK
+------------------------------------------------------------
+
+Starship:
+- Remove starship init lines from ~/.bashrc (pi-nice block)
+- Remove ~/.config/starship.toml
+
+tmux:
+- Restore from ~/.tmux.conf.bak_*
+
+gitignore:
+- Remove ~/.config/git/ignore
+- Unset: git config --global --unset core.excludesfile
+
+============================================================
+

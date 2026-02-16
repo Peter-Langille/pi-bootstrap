@@ -1,0 +1,17 @@
+============================================================
+STARSHIP + CONDA — NOTES
+============================================================
+
+- Starship conda module displays the environment when
+  CONDA_DEFAULT_ENV is set.
+
+- If conda is also modifying your prompt (PS1), you can get
+  a "double prompt" look.
+
+Fix:
+  conda config --set changeps1 False
+
+(Starship docs explicitly call this out for conda.) :contentReference[oaicite:8]{index=8}
+
+============================================================
+
