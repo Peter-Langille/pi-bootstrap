@@ -1,0 +1,256 @@
+============================================================
+RASPBERRY PI OS (DEBIAN 13 TRIXIE)
+WIFI CONFIGURATION + NETWORK RECOVERY FIELD GUIDE
+============================================================
+
+PURPOSE
+-------
+Step-by-step reference for:
+1) Adding / switching WiFi over SSH
+2) Direct Ethernet laptop-to-Pi recovery access
+3) Regulatory domain (country) configuration
+4) Forcing WiFi scans
+5) Switching connections manually
+6) Using raspi-config vs CLI
+7) Verifying routing and connectivity
+
+Applies to Raspberry Pi OS (Debian 13 Trixie)
+Network stack: NetworkManager (nmcli)
+
+------------------------------------------------------------
+SECTION 1 — VERIFY NETWORK STACK
+------------------------------------------------------------
+
+Check NetworkManager status:
+
+    sudo systemctl is-active NetworkManager
+    nmcli --version
+
+Check device status:
+
+    nmcli device status
+
+Typical output:
+    wlan0          wifi      connected
+    eth0           ethernet  unavailable
+    tailscale0     tun       connected (externally)
+
+------------------------------------------------------------
+SECTION 2 — SCAN FOR WIFI NETWORKS (FORCE SCAN)
+------------------------------------------------------------
+
+Basic scan:
+
+    nmcli dev wifi list
+
+Force rescan (recommended):
+
+    nmcli dev wifi rescan
+    nmcli -f IN-USE,SSID,SIGNAL,SECURITY dev wifi list
+
+Column meanings:
+    IN-USE  → "*" means currently connected
+    SSID    → network name
+    SIGNAL  → signal strength %
+    SECURITY→ WPA2/WPA3/etc
+
+------------------------------------------------------------
+SECTION 3 — CONNECT TO A WIFI NETWORK (CLI METHOD)
+------------------------------------------------------------
+
+Connect to visible SSID:
+
+    sudo nmcli dev wifi connect "SSID_NAME" password "PASSWORD"
+
+Specify interface explicitly (if needed):
+
+    sudo nmcli dev wifi connect "SSID_NAME" password "PASSWORD" ifname wlan0
+
+After connection, verify:
+
+    nmcli device status
+    ip -4 addr show wlan0
+    ip route
+
+------------------------------------------------------------
+SECTION 4 — SWITCH BETWEEN SAVED WIFI CONNECTIONS
+------------------------------------------------------------
+
+List saved connection profiles:
+
+    nmcli connection show
+
+Manually bring a connection up:
+
+    sudo nmcli connection up "PROFILE_NAME"
+
+Bring current connection down:
+
+    sudo nmcli connection down "PROFILE_NAME"
+
+NetworkManager automatically prioritizes strongest/available
+connections unless manually overridden.
+
+------------------------------------------------------------
+SECTION 5 — WIFI REGULATORY DOMAIN (CRITICAL FOR 5 GHz)
+------------------------------------------------------------
+
+SYMPTOM:
+    Laptop sees SSID.
+    Pi does NOT see SSID.
+    nmcli says: "No network with SSID found."
+
+CAUSE:
+    Regulatory domain not set.
+    Linux blocks active scanning on many 5GHz channels.
+
+Check regulatory domain:
+
+    iw reg get
+
+If you see:
+    country 00: DFS-UNSET
+
+You must set the WLAN country.
+
+SET COUNTRY (Recommended Method):
+
+    sudo raspi-config
+
+Navigate:
+    Localisation Options
+        → WLAN Country
+        → Select United States (or your region)
+
+Reboot:
+
+    sudo reboot
+
+After reboot:
+
+    nmcli dev wifi rescan
+    nmcli dev wifi list
+
+NOTE:
+raspi-config also allows WiFi SSID + password setup:
+    raspi-config
+        → System Options
+        → Wireless LAN
+        → Enter SSID + password
+
+This writes a proper NetworkManager profile.
+
+------------------------------------------------------------
+SECTION 6 — VERIFY CONNECTIVITY
+------------------------------------------------------------
+
+Check IP address:
+
+    ip -4 addr show wlan0
+
+Check default route:
+
+    ip route
+
+Test gateway:
+
+    ping -c 2 1.1.1.1
+
+Test DNS:
+
+    ping -c 2 google.com
+
+------------------------------------------------------------
+SECTION 7 — DIRECT LAPTOP ↔ PI ETHERNET RECOVERY METHOD
+------------------------------------------------------------
+
+Use when:
+    - WiFi unavailable
+    - Misconfigured WiFi
+    - Remote network debugging
+
+PHYSICAL:
+    Laptop USB→Ethernet adapter
+        ↕
+    Ethernet cable
+        ↕
+    Pi eth0
+
+STEP 1 — On laptop, find interface:
+
+    ip link
+
+Example interface:
+    enx123456789abc
+
+STEP 2 — Assign static IP to laptop interface:
+
+    sudo ip addr flush dev enx123456789abc
+    sudo ip addr add 10.55.0.1/24 dev enx123456789abc
+    sudo ip link set enx123456789abc up
+
+STEP 3 — Configure Pi eth0 (if console access available):
+
+    sudo nmcli connection show
+    sudo nmcli con mod "Wired connection 1" ipv4.addresses 10.55.0.2/24 ipv4.method manual
+    sudo nmcli con up "Wired connection 1"
+
+STEP 4 — SSH into Pi:
+
+    ssh user@10.55.0.2
+
+Once connected, configure WiFi normally.
+
+------------------------------------------------------------
+SECTION 8 — CHECK WIFI RADIO + RFKILL
+------------------------------------------------------------
+
+Check radio state:
+
+    nmcli radio all
+
+Check rfkill:
+
+    sudo rfkill list
+
+Unblock if necessary:
+
+    sudo rfkill unblock wifi
+
+------------------------------------------------------------
+SECTION 9 — TROUBLESHOOTING QUICK LIST
+------------------------------------------------------------
+
+Problem: SSID not found
+    → Force scan
+    → Check regulatory domain
+    → Confirm router not 5GHz-only if Pi configured wrong
+
+Problem: SSH drops when switching WiFi
+    → Normal if connected over WiFi directly
+    → Reconnect using new DHCP IP
+
+Problem: Connected but no internet
+    → Check ip route
+    → Verify gateway
+    → Verify DNS
+
+Problem: Want to manually switch networks
+    → nmcli connection up "PROFILE_NAME"
+
+------------------------------------------------------------
+SECTION 10 — VERIFY ACTIVE NETWORK
+------------------------------------------------------------
+
+Show active connection:
+
+    nmcli -t -f NAME,DEVICE connection show --active
+
+Confirm which interface is primary route:
+
+    ip route
+
+------------------------------------------------------------
+
+END OF DOCUMENT
+============================================================
