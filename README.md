@@ -426,7 +426,7 @@ Font Install Behavior:
 - Will warn but not fail if network interruption occurs
 
 Run:
-curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/extras/raspi-nice-setup_v5.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Peter-Langille/pi-bootstrap/main/extras/raspi-nice-setup_v5.sh | sudo bash
 
 Operational Notes:
 - New SSH session required after run.
