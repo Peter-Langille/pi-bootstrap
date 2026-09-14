@@ -433,3 +433,173 @@ Operational Notes:
 - Nerd Font must also be installed on client machine
   (icons render on the terminal host, not the Pi).
 
+
+------------------------------------------------------------
+RASPBERRY PI 3 A+ — EXPERIMENTAL / UNPROVEN
+------------------------------------------------------------
+
+STATUS:
+
+EXPERIMENTAL / UNPROVEN
+
+Target hardware:
+- Raspberry Pi 3 A+
+- 512 MB RAM
+- Raspberry Pi OS / Debian 13 (trixie)
+- 64-bit ARM / aarch64
+
+First clean validation target:
+- pi3-dev-2
+
+Script:
+raspi-bootstrap_v4_pi3_mllite_trixie.sh
+
+Required explicit package lock:
+locks/pi3-ml-linux-aarch64-explicit.txt
+
+IMPORTANT:
+This Pi 3 bootstrap has NOT yet completed a clean end-to-end deployment.
+Do not treat it as a proven bootstrap until it passes validation on a freshly
+imaged Raspberry Pi 3 A+.
+
+WHY A SEPARATE PI 3 BOOTSTRAP EXISTS:
+
+The standard v3 ML-lite bootstrap performs a Conda dependency solve while
+installing the development/ML stack.
+
+Testing on a Raspberry Pi 3 A+ with 512 MB RAM demonstrated that this solve is
+not practical on the device. Conda exhausted available memory, entered heavy
+swap/I/O activity, and was eventually killed/rebooted.
+
+The Pi 3 bootstrap therefore uses a different Conda strategy.
+
+PI 3 DESIGN:
+
+1) Persistent swap
+
+The script creates:
+
+/swapfile
+
+Size:
+
+2 GB
+
+The swapfile is:
+- Created before apt/Conda workloads
+- Configured with chmod 600
+- Initialized with mkswap
+- Enabled with swapon
+- Persisted through /etc/fstab
+
+Existing Raspberry Pi zram is left enabled and untouched.
+
+If /swapfile already exists, the script validates it before attempting to use
+it and refuses to overwrite an existing file that is not valid swap.
+
+2) Clean Miniforge base
+
+Miniforge is installed at:
+
+/opt/conda
+
+The ML/data stack is NOT installed into Conda base.
+
+Base auto-activation is disabled.
+
+3) Dedicated ML environment
+
+The ML/data environment is:
+
+/opt/conda/envs/pi3-ml
+
+It contains:
+
+- Python 3.13
+- JupyterLab
+- ipykernel
+- numpy
+- pandas
+- pyarrow
+- requests
+- lxml
+- matplotlib
+- pyyaml
+- scikit-learn
+- xgboost
+- lightgbm
+- joblib
+- onnxruntime
+
+4) Explicit ARM64 package lock
+
+The environment is created from:
+
+locks/pi3-ml-linux-aarch64-explicit.txt
+
+This explicit package specification was generated from a successfully solved
+linux-aarch64 pi3-ml environment on a Raspberry Pi 5.
+
+The Pi 3 therefore installs exact package artifacts instead of performing the
+large dependency solve locally.
+
+This is specifically intended to avoid the memory-intensive Conda solve that
+failed on the Raspberry Pi 3 A+.
+
+5) Jupyter
+
+The pi3-ml environment is registered as:
+
+Python (pi3-ml)
+
+Jupyter and JupyterLab commands are exposed from the dedicated pi3-ml
+environment rather than from Conda base.
+
+------------------------------------------------------------
+PI 3 TEST PROCEDURE
+------------------------------------------------------------
+
+On a freshly imaged Raspberry Pi 3 A+:
+
+git clone git@github.com:Peter-Langille/pi-bootstrap.git
+
+cd pi-bootstrap
+
+sudo bash raspi-bootstrap_v4_pi3_mllite_trixie.sh
+
+After successful completion:
+
+sudo reboot
+
+Then verify:
+
+swapon --show
+
+docker run --rm hello-world
+
+sudo tailscale up
+
+/opt/conda/envs/pi3-ml/bin/python -c "import numpy, pandas, pyarrow, requests, lxml, matplotlib, yaml, sklearn, xgboost, lightgbm, joblib, onnxruntime; print('PASS')"
+
+/opt/conda/envs/pi3-ml/bin/jupyter lab --version
+
+------------------------------------------------------------
+PI 3 PROMOTION CRITERIA
+------------------------------------------------------------
+
+raspi-bootstrap_v4_pi3_mllite_trixie.sh remains EXPERIMENTAL / UNPROVEN until
+a clean deployment on pi3-dev-2 proves:
+
+- Bootstrap completes without OOM failure
+- 2 GB /swapfile survives reboot
+- Raspberry Pi zram remains available
+- Docker works
+- Tailscale installs and authenticates normally
+- Miniforge base remains functional
+- pi3-ml environment installs successfully from the explicit lock
+- ML/data import validation passes
+- JupyterLab starts from the pi3-ml environment
+- Python (pi3-ml) Jupyter kernel is registered
+
+Only after those checks pass should the Pi 3 bootstrap be documented as
+PROVEN.
