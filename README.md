@@ -603,3 +603,280 @@ a clean deployment on pi3-dev-2 proves:
 
 Only after those checks pass should the Pi 3 bootstrap be documented as
 PROVEN.
+
+------------------------------------------------------------
+NEWSBOAT + w3m — TERMINAL NEWS READER
+------------------------------------------------------------
+
+STATUS:
+
+Tested on Raspberry Pi OS / Debian 13 (trixie) — PASS.
+
+Newsboat and w3m are installed and configured automatically by:
+
+extras/raspi-nice-setup_v5.sh
+
+Newsboat provides a terminal-based RSS news reader.
+
+w3m provides a terminal-based web browser so full articles can be opened
+directly from Newsboat without requiring a graphical desktop or browser.
+
+
+------------------------------------------------------------
+INSTALLATION
+------------------------------------------------------------
+
+Normally no separate installation is required because the Nice Layer installs:
+
+- newsboat
+- w3m
+
+and creates the required configuration files automatically.
+
+Manual installation if needed:
+
+sudo apt update
+sudo apt install newsboat w3m
+
+
+------------------------------------------------------------
+IMPORTANT FILE LOCATIONS
+------------------------------------------------------------
+
+RSS feed list:
+
+~/.config/newsboat/urls
+
+Newsboat configuration:
+
+~/.config/newsboat/config
+
+The Nice Layer automatically creates both files.
+
+DO NOT put Newsboat configuration commands in the urls file.
+Newsboat will interpret them as RSS feeds.
+
+
+------------------------------------------------------------
+CONFIGURED RSS FEEDS
+------------------------------------------------------------
+
+The Nice Layer installs the following feed list:
+
+# --- GENERAL / WORLD NEWS ---
+https://feeds.bbci.co.uk/news/rss.xml news general
+https://feeds.bbci.co.uk/news/world/rss.xml news world
+https://feeds.npr.org/1001/rss.xml news general
+https://www.theguardian.com/world/rss news world
+
+# --- US NEWS ---
+https://feeds.npr.org/1003/rss.xml news usa
+https://rss.nytimes.com/services/xml/rss/nyt/US.xml news usa
+
+# --- BUSINESS / ECONOMY ---
+https://feeds.bbci.co.uk/news/business/rss.xml news business
+https://feeds.npr.org/1017/rss.xml news business
+https://rss.nytimes.com/services/xml/rss/nyt/Business.xml news business
+
+# --- SCIENCE ---
+https://feeds.bbci.co.uk/news/science_and_environment/rss.xml science
+https://feeds.npr.org/1007/rss.xml science
+https://rss.nytimes.com/services/xml/rss/nyt/Science.xml science
+https://www.nasa.gov/rss/dyn/breaking_news.rss science space
+
+# --- TECHNOLOGY ---
+https://feeds.bbci.co.uk/news/technology/rss.xml tech
+https://feeds.arstechnica.com/arstechnica/index tech
+https://www.theverge.com/rss/index.xml tech
+https://www.wired.com/feed/rss tech
+
+# --- LINUX / OPEN SOURCE ---
+https://www.phoronix.com/rss.php linux
+https://lwn.net/headlines/rss linux
+https://www.raspberrypi.com/news/feed/ raspberrypi linux
+https://ubuntu.com/blog/feed linux ubuntu
+
+# --- ELECTRONICS / MAKER ---
+https://hackaday.com/blog/feed/ maker electronics
+https://www.adafruit.com/blog/feed/ maker electronics
+https://www.cnx-software.com/feed/ maker electronics
+
+# --- PHOTOGRAPHY ---
+https://petapixel.com/feed/ photography
+https://www.dpreview.com/feeds/news.xml photography
+
+# --- SPACE ---
+https://www.nasa.gov/rss/dyn/breaking_news.rss space
+https://www.space.com/feeds/all space
+
+# --- SECURITY ---
+https://krebsonsecurity.com/feed/ security
+https://www.schneier.com/feed/atom/ security
+
+
+------------------------------------------------------------
+NEWSBOAT CONFIGURATION
+------------------------------------------------------------
+
+The Nice Layer creates:
+
+~/.config/newsboat/config
+
+with the following configuration:
+
+# High-contrast Newsboat configuration
+
+color background        white black
+color listnormal        white black
+color listnormal_unread yellow black bold
+color listfocus         black white bold
+color listfocus_unread  black yellow bold
+
+# Top information bar
+color info              black white bold
+
+# Bottom command/help bar
+color hint-key          black white bold
+color hint-description  black white
+color hint-separator    black white bold
+
+# Open full web articles in terminal using w3m
+browser "w3m %u"
+
+
+------------------------------------------------------------
+START NEWSBOAT
+------------------------------------------------------------
+
+From the normal Linux command prompt:
+
+newsboat
+
+Newsboat opens the feed list.
+
+Press:
+
+R
+
+to fetch/refresh all RSS feeds.
+
+To leave Newsboat:
+
+q
+
+Press q repeatedly if necessary to move backward through an article/feed
+and eventually exit Newsboat to the Linux prompt.
+
+
+------------------------------------------------------------
+BASIC NEWSBOAT CONTROLS
+------------------------------------------------------------
+
+↑ / ↓ or j / k    Move up/down
+Enter             Open selected feed/article
+q                 Back one level / quit
+R                 Refresh ALL feeds
+r                 Refresh selected feed
+n                 Next unread article
+p                 Previous unread article
+Space             Page down
+b                 Page up
+u                 Toggle read/unread
+/                 Search
+o                 Open FULL webpage in w3m
+
+
+NORMAL WORKFLOW:
+
+Linux terminal
+    |
+  newsboat
+    |
+    v
+FEED LIST
+    |
+  Enter
+    v
+ARTICLE LIST
+    |
+  Enter
+    v
+RSS ARTICLE
+    |
+    o
+    v
+FULL WEB ARTICLE IN w3m
+
+
+------------------------------------------------------------
+w3m — TERMINAL WEB BROWSER
+------------------------------------------------------------
+
+Newsboat can only display the content supplied by the RSS feed.
+
+If the feed contains only a summary, press:
+
+o
+
+Newsboat opens the actual article webpage in w3m.
+
+This stays entirely inside the terminal — no graphical desktop or graphical
+web browser is required.
+
+
+Basic w3m controls:
+
+↑ / ↓              Scroll / move
+Enter              Follow selected link
+Space              Page down
+b                  Page up
+B                  Previous webpage
+q                  Quit w3m and return to Newsboat
+
+
+w3m can also browse websites directly from Linux:
+
+w3m https://www.bbc.com
+
+
+w3m works especially well with:
+
+- News articles
+- Blogs
+- Documentation
+- Wikipedia
+- Forums
+- Text-heavy websites
+
+Sites heavily dependent on JavaScript, video, complex web apps, or some
+login/paywall systems may not work correctly.
+
+
+------------------------------------------------------------
+NEWSBOAT / w3m VALIDATION
+------------------------------------------------------------
+
+Nice Layer installation and generated configuration were tested on
+pi3-dev-1.
+
+Result:
+
+PASS
+
+The following completed successfully:
+
+sudo bash extras/raspi-nice-setup_v5.sh
+
+The script confirmed that Newsboat and w3m were installed and generated:
+
+~/.config/newsboat/urls
+~/.config/newsboat/config
+
+Feed/config parsing and RSS reload were then tested with:
+
+newsboat -x reload
+
+The command returned cleanly with no errors.
+
+The Newsboat + w3m portion of extras/raspi-nice-setup_v5.sh is therefore
+PROVEN on pi3-dev-1.
