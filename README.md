@@ -880,3 +880,181 @@ The command returned cleanly with no errors.
 
 The Newsboat + w3m portion of extras/raspi-nice-setup_v5.sh is therefore
 PROVEN on pi3-dev-1.
+
+## Optional Fallback Wi-Fi Hotspot
+
+For Raspberry Pis that may be used away from their normal saved Wi-Fi networks, an optional fallback hotspot can provide a direct SSH recovery path.
+
+This feature is **not part of the core Raspberry Pi bootstrap** and should only be installed on Pis where portable/off-network access is useful.
+
+### Installer
+
+```text
+extras/raspi-fallback-hotspot_v1.sh
+```
+
+The installer is standalone and optional.
+
+> **Status:** The underlying fallback-hotspot mechanism has been proven on `pi3-dev-1`, including a real off-network/road test. The standalone `raspi-fallback-hotspot_v1.sh` installer itself is **not yet proven** and must be tested from scratch on a clean Pi before being promoted to proven status.
+
+### Behaviour
+
+On boot, NetworkManager is allowed to connect normally to any saved infrastructure Wi-Fi network.
+
+```text
+BOOT
+  |
+  +-- NetworkManager starts
+  |
+  +-- Wait approximately 30 seconds
+  |
+  +-- Infrastructure Wi-Fi connected?
+        |
+        +-- YES --> Leave connection alone
+        |
+        +-- NO  --> Start fallback hotspot
+```
+
+Once the fallback hotspot starts, it remains active until the Pi is rebooted or another NetworkManager Wi-Fi profile is manually activated.
+
+There is intentionally no background loop periodically attempting to replace the hotspot.
+
+### Hotspot Name
+
+The hotspot SSID is automatically derived from the Raspberry Pi hostname.
+
+Examples:
+
+```text
+Hostname: pi3-dev-1
+SSID:     pi3-dev-1
+
+Hostname: pi3-dev-2
+SSID:     pi3-dev-2
+```
+
+The fallback hotspot is intentionally configured as an **open Wi-Fi network with no password**. It is intended as a local recovery mechanism for devices under physical control.
+
+### Recovery
+
+If the Pi is started somewhere none of its saved Wi-Fi networks are available:
+
+1. Power on the Pi.
+2. Wait approximately 30 seconds after networking starts.
+3. Look for a Wi-Fi network matching the Pi hostname.
+4. Join that network.
+5. SSH using the Pi's `.local` hostname.
+
+Example:
+
+```bash
+ssh peter@pi3-dev-1.local
+```
+
+There is no need to know or remember the hotspot's IP address.
+
+NetworkManager's `ipv4.method shared` provides addressing/DHCP for clients connected to the hotspot.
+
+### Returning to Normal Wi-Fi
+
+A saved NetworkManager Wi-Fi connection can be activated manually.
+
+Example:
+
+```bash
+sudo nmcli connection up "virus"
+```
+
+The hotspot connection will drop and the Pi will return to the selected infrastructure Wi-Fi network.
+
+### Installation
+
+From the `pi-bootstrap` repository:
+
+```bash
+sudo bash extras/raspi-fallback-hotspot_v1.sh
+```
+
+The installer creates/configures:
+
+```text
+NetworkManager profile:
+    fallback-hotspot
+
+/usr/local/sbin/fallback-hotspot.sh
+
+/etc/systemd/system/fallback-hotspot.service
+```
+
+The systemd service is enabled for future boots but is not intended to disrupt the current working Wi-Fi connection during installation.
+
+### Requirements
+
+The target Pi requires:
+
+```text
+NetworkManager / nmcli
+Wi-Fi hardware supporting AP mode
+wlan0
+avahi-daemon
+SSH server
+```
+
+Avahi provides the convenient:
+
+```text
+<hostname>.local
+```
+
+address used for SSH recovery.
+
+### Proven Test — pi3-dev-1
+
+The fallback mechanism was manually built and tested on:
+
+```text
+Device:  Raspberry Pi 3 A+
+Hostname: pi3-dev-1
+OS:      Raspberry Pi OS / Debian 13 Trixie
+Wi-Fi:   single wlan0 interface
+```
+
+The following were proven:
+
+```text
+Manual fallback-hotspot activation       PASS
+Open hotspot SSID visible                PASS
+Client association                       PASS
+NetworkManager shared DHCP/addressing    PASS
+Avahi / hostname.local resolution        PASS
+SSH through fallback hotspot             PASS
+Manual return to normal Wi-Fi            PASS
+Normal-Wi-Fi reboot path                 PASS
+Real off-network/road fallback boot      PASS
+```
+
+During the real road test, `pi3-dev-1` was booted without its normal saved Wi-Fi network available. The fallback hotspot appeared and SSH access through:
+
+```bash
+ssh peter@pi3-dev-1.local
+```
+
+was successfully established.
+
+### Installer Proof Status
+
+The mechanism is proven, but the standalone installer is intentionally tracked separately:
+
+```text
+raspi-fallback-hotspot_v1.sh
+
+Installer-from-clean-system proof: NOT YET PROVEN
+```
+
+Planned proof target:
+
+```text
+pi3-dev-2
+```
+
+The installer should not be marked proven until it successfully creates the complete fallback setup on a Pi that did not previously contain the manually configured hotspot profile, fallback script, or systemd service.

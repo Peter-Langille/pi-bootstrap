@@ -1,0 +1,198 @@
+============================================================
+NETWORKMANAGER — ADD / MANAGE WI-FI NETWORKS
+============================================================
+
+------------------------------------------------------------
+NORMAL CASE — WIFI IS VISIBLE
+------------------------------------------------------------
+
+Scan:
+
+nmcli device wifi rescan
+nmcli device wifi list
+
+Connect and save the network:
+
+sudo nmcli --ask device wifi connect "SSID"
+
+Example:
+
+sudo nmcli --ask device wifi connect "virus"
+
+
+============================================================
+FALLBACK-HOTSPOT CASE — WIFI CANNOT BE SCANNED
+============================================================
+
+When connected to the Pi's fallback hotspot, wlan0 is being used as
+the access point. Instead of scanning, manually create and save a
+NetworkManager profile for the destination Wi-Fi.
+
+------------------------------------------------------------
+1. CREATE THE SAVED WIFI PROFILE
+------------------------------------------------------------
+
+sudo nmcli connection add \
+    type wifi \
+    ifname wlan0 \
+    con-name "PROFILE_NAME" \
+    ssid "SSID"
+
+Example:
+
+sudo nmcli connection add \
+    type wifi \
+    ifname wlan0 \
+    con-name "virus" \
+    ssid "virus"
+
+"con-name" is the friendly NetworkManager profile name.
+"ssid" is the actual Wi-Fi network name.
+
+They can be the same, which keeps things simple.
+
+------------------------------------------------------------
+2. CONFIGURE WPA/WPA2 PASSWORD
+------------------------------------------------------------
+
+sudo nmcli connection modify "PROFILE_NAME" \
+    wifi-sec.key-mgmt wpa-psk \
+    wifi-sec.psk "PASSWORD"
+
+Example:
+
+sudo nmcli connection modify "virus" \
+    wifi-sec.key-mgmt wpa-psk \
+    wifi-sec.psk "YOUR_WIFI_PASSWORD"
+
+The profile is now SAVED even if that Wi-Fi network is not currently
+visible or reachable.
+
+------------------------------------------------------------
+3. MAKE SURE IT CAN AUTOCONNECT
+------------------------------------------------------------
+
+sudo nmcli connection modify "PROFILE_NAME" connection.autoconnect yes
+
+Example:
+
+sudo nmcli connection modify "virus" connection.autoconnect yes
+
+------------------------------------------------------------
+4. VERIFY THE SAVED PROFILE
+------------------------------------------------------------
+
+nmcli connection show
+
+Or:
+
+nmcli -f NAME,TYPE,AUTOCONNECT connection show
+
+------------------------------------------------------------
+5. SWITCH FROM FALLBACK HOTSPOT TO THE NEW WIFI
+------------------------------------------------------------
+
+sudo nmcli connection up "PROFILE_NAME"
+
+Example:
+
+sudo nmcli connection up "virus"
+
+IMPORTANT:
+
+This takes wlan0 away from the fallback hotspot, so the current SSH
+connection WILL DROP.
+
+NetworkManager will then attempt to connect to the SSID stored in that
+profile.
+
+If successful, reconnect normally:
+
+ssh peter@HOSTNAME.local
+
+
+============================================================
+RENAME AN EXISTING NETWORKMANAGER PROFILE
+============================================================
+
+Show profiles:
+
+nmcli connection show
+
+Rename:
+
+sudo nmcli connection modify "OLD_NAME" connection.id "NEW_NAME"
+
+Example:
+
+sudo nmcli connection modify "netplan-wlan0-virus" connection.id "virus"
+
+This changes the NetworkManager PROFILE NAME only.
+It does NOT change the actual Wi-Fi SSID.
+
+
+============================================================
+QUICK FALLBACK RECOVERY WORKFLOW
+============================================================
+
+1. Pi cannot find known Wi-Fi.
+2. Pi starts fallback hotspot.
+3. Join hotspot named after Pi, e.g.:
+
+   pi3-dev-1
+
+4. SSH:
+
+   ssh peter@pi3-dev-1.local
+
+5. Create destination Wi-Fi profile:
+
+   sudo nmcli connection add type wifi ifname wlan0 \
+       con-name "MyWifi" ssid "MyWifi"
+
+6. Store its password:
+
+   sudo nmcli connection modify "MyWifi" \
+       wifi-sec.key-mgmt wpa-psk \
+       wifi-sec.psk "PASSWORD"
+
+7. Enable autoconnect:
+
+   sudo nmcli connection modify "MyWifi" connection.autoconnect yes
+
+8. Switch to it:
+
+   sudo nmcli connection up "MyWifi"
+
+   SSH WILL DROP.
+
+9. Reconnect:
+
+   ssh peter@HOSTNAME.local
+
+
+============================================================
+USEFUL COMMANDS
+============================================================
+
+# Show available Wi-Fi when wlan0 is free:
+nmcli device wifi list
+
+# Show saved profiles:
+nmcli connection show
+
+# Show active profiles:
+nmcli connection show --active
+
+# Compact connection view:
+nmcli -f NAME,TYPE,DEVICE connection show
+
+# Connect to saved profile:
+sudo nmcli connection up "PROFILE_NAME"
+
+# Rename profile:
+sudo nmcli connection modify "OLD_NAME" connection.id "NEW_NAME"
+
+# SSH without knowing the IP:
+ssh peter@HOSTNAME.local
+============================================================
