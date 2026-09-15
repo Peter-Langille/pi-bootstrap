@@ -969,6 +969,11 @@ The hotspot connection will drop and the Pi will return to the selected infrastr
 
 ### Installation
 
+Install directly from GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Peter-Langille/pi-bootstrap/main/extras/raspi-fallback-hotspot_v1.sh | sudo bash
+
 From the `pi-bootstrap` repository:
 
 ```bash
