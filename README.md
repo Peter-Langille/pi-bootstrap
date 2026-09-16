@@ -1063,3 +1063,262 @@ pi3-dev-2
 ```
 
 The installer should not be marked proven until it successfully creates the complete fallback setup on a Pi that did not previously contain the manually configured hotspot profile, fallback script, or systemd service.
+
+## Optional OpenAI Codex CLI
+
+For Raspberry Pis used as lightweight development or administration systems, the OpenAI Codex CLI provides direct ChatGPT/Codex access from the terminal without requiring a graphical desktop or web browser.
+
+This feature is **not part of the core Raspberry Pi bootstrap**. It is an optional user-level installation.
+
+### Installer
+
+```text
+extras/raspi-codex-setup_v1.sh
+```
+
+The wrapper is intentionally small.
+
+It does **not** duplicate or maintain OpenAI's Codex installation logic. Instead, it prepares the Raspberry Pi environment and then delegates the actual Codex installation to OpenAI's current official installer.
+
+> **Status:** Codex itself has been successfully installed and tested on `pi3-dev-1`, including ChatGPT authentication and local command execution. The standalone `raspi-codex-setup_v1.sh` wrapper is **not yet proven from a clean system** and should remain unproven until tested on a clean Raspberry Pi.
+
+### Why the Wrapper Exists
+
+On `pi3-dev-1`, the normal Codex installation initially failed while extracting the standalone ARM64 package.
+
+The cause was the Raspberry Pi `/tmp` configuration:
+
+```text
+/tmp = RAM-backed tmpfs
+available size ≈ 208 MB
+```
+
+The Codex release archive was approximately 88 MB compressed, but extraction required more space than the `/tmp` tmpfs could provide.
+
+The result was a failed extraction when `/tmp` reached 100% usage.
+
+The Pi itself had ample SD-card storage available.
+
+The solution was to force temporary installation files onto the normal disk-backed home filesystem.
+
+The wrapper creates:
+
+```text
+$HOME/tmp/codex-install
+```
+
+and exports:
+
+```bash
+TMPDIR="$HOME/tmp/codex-install"
+```
+
+before launching the official OpenAI installer.
+
+This causes the upstream installer's temporary working files to use disk-backed storage instead of the small RAM-backed `/tmp`.
+
+### Installation
+
+Install directly from GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Peter-Langille/pi-bootstrap/main/extras/raspi-codex-setup_v1.sh | bash
+```
+
+**Do not use `sudo`.**
+
+Codex is installed as a user-level application and should be installed by the normal Linux user.
+
+From the `pi-bootstrap` repository:
+
+```bash
+bash extras/raspi-codex-setup_v1.sh
+```
+
+### Requirements
+
+The wrapper currently requires:
+
+```text
+ARM64 / aarch64 Raspberry Pi
+curl
+Internet access
+Normal non-root user
+```
+
+The script intentionally aborts if run as root.
+
+### Installation Architecture
+
+The wrapper downloads and executes OpenAI's current official installer:
+
+```text
+https://raw.githubusercontent.com/openai/codex/main/scripts/install/install.sh
+```
+
+OpenAI's installer remains responsible for:
+
+```text
+Codex release selection
+ARM64 package selection
+Package download
+SHA-256 verification
+Standalone package layout
+codex-code-mode-host
+ripgrep helper
+bundled bubblewrap
+Codex executable installation
+```
+
+The `pi-bootstrap` wrapper is responsible only for the Raspberry Pi-specific installation environment, particularly avoiding the small RAM-backed `/tmp`.
+
+This separation is intentional so the repository does not freeze or duplicate OpenAI's installer implementation as Codex evolves.
+
+### Installed Location
+
+The user-facing Codex command is installed at:
+
+```text
+~/.local/bin/codex
+```
+
+The standalone Codex package is maintained beneath:
+
+```text
+~/.codex/packages/standalone/
+```
+
+The standalone package contains supporting components required by Codex in addition to the main executable.
+
+Do **not** replace the standalone installation with only a copied `codex` binary. Testing demonstrated that a single-binary installation can start the Codex interface but leaves required helper components such as `codex-code-mode-host` unavailable.
+
+### First Launch
+
+Start Codex:
+
+```bash
+codex
+```
+
+On first launch, sign in using the normal ChatGPT account authentication flow.
+
+Device-code authentication may be offered.
+
+If device-code authorization is disabled for the ChatGPT account, it must first be enabled in the ChatGPT security settings before that authentication method can complete.
+
+Successful authentication is stored in the user's Codex configuration and normally survives Codex upgrades/reinstallation.
+
+### Permissions
+
+The tested configuration on `pi3-dev-1` uses:
+
+```text
+Workspace (Ask for approval)
+```
+
+This allows Codex to work inside the current workspace while requesting approval for operations outside the permitted scope.
+
+Permission level can be changed later from inside Codex if required.
+
+### Bubblewrap
+
+On `pi3-dev-1`, Codex reports that the system `bubblewrap` executable is not installed.
+
+This is non-fatal.
+
+The official standalone Codex package includes its own bundled `bubblewrap`, and Codex successfully used the bundled version during testing.
+
+Installing a separate system `bubblewrap` package is therefore not currently required for this setup.
+
+### Proven Test — pi3-dev-1
+
+Codex was manually installed and tested on:
+
+```text
+Device:       Raspberry Pi 3 A+
+Hostname:     pi3-dev-1
+RAM:          512 MB
+OS:           Raspberry Pi OS / Debian 13 Trixie
+Architecture: aarch64
+Codex tested: 0.154.0
+```
+
+The following were proven:
+
+```text
+Official ARM64 standalone package installation     PASS
+ChatGPT account authentication                     PASS
+Codex terminal UI                                  PASS
+GPT-5.6 Sol session                                PASS
+codex-code-mode-host                               PASS
+Local read-only command execution                  PASS
+Bundled bubblewrap operation                       PASS
+Disk-backed TMPDIR workaround                      PASS
+```
+
+A local command execution test successfully ran:
+
+```bash
+uname -a
+free -h
+```
+
+through Codex without modifying the system.
+
+### Important Installation Finding
+
+A manual installation containing only:
+
+```text
+codex
+```
+
+was **not sufficient**.
+
+Although the Codex interface launched, command execution failed because:
+
+```text
+codex-code-mode-host
+```
+
+was missing.
+
+The proper OpenAI standalone installation includes the required supporting package structure.
+
+For this reason, `raspi-codex-setup_v1.sh` always delegates package installation to OpenAI's official installer rather than manually downloading or copying the Codex binary.
+
+### Wrapper Proof Status
+
+The underlying Codex installation procedure and Raspberry Pi `/tmp` workaround are proven on `pi3-dev-1`.
+
+The new standalone wrapper is intentionally tracked separately:
+
+```text
+raspi-codex-setup_v1.sh
+
+Syntax validation:                 PASS
+Manual procedure represented:      PASS
+Installer-from-clean-system proof: NOT YET PROVEN
+```
+
+A run on the existing `pi3-dev-1` would only prove an upgrade/reinstallation path because Codex is already installed and authenticated there.
+
+The wrapper should not be marked **PROVEN** until it successfully installs Codex on a clean ARM64 Raspberry Pi that does not already contain the Codex standalone package.
+
+### Design Goal
+
+The Codex wrapper follows the same infrastructure philosophy as the rest of this repository:
+
+```text
+Reflash Pi
+    |
+Run bootstrap
+    |
+Install optional Codex wrapper
+    |
+Sign in to ChatGPT
+    |
+Continue working from the terminal
+```
+
+The Raspberry Pi-specific workaround remains under our control while OpenAI remains responsible for maintaining the Codex installer and package internals.
